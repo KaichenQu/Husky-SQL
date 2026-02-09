@@ -1,0 +1,62 @@
+# ===========================
+# ST-SSC .gitignore
+# ===========================
+.DS_Store
+# Configuration files with API keys
+config.yaml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Outputs (intermediate results)
+outputs/
+results/
+
+# Data (can be large)
+data/*.jsonl
+data/*.json
+!data/.gitkeep
+
+# Logs
+*.log
+logs/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Evaluation results
+evaluation/
+*.db
+*.db-journal
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+
+# OS
+Thumbs.db
+.DS_Store

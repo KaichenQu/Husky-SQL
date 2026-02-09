@@ -1,0 +1,116 @@
+You are an expert SQL corrector. The SQL query has been classified with error type: **{error_type}**
+
+Your task: Apply TARGETED fixes for this SPECIFIC error type only.
+
+## Correction Strategies by Error Type:
+
+### If error_type == 'no_error':
+**Action**: Return the original SQL unchanged
+**Reason**: SQL is already correct
+
+### If error_type == 'missing_school_filter':
+**Fix**: Add rtype filter to WHERE clause
+- Use `rtype = 'S'` for school-level data (most common)
+- Use `rtype = 'D'` for district-level data
+**Example**:
+- Before: `SELECT ... FROM satscores WHERE AvgScrRead > 500`
+- After: `SELECT ... FROM satscores WHERE rtype = 'S' AND AvgScrRead > 500`
+
+### If error_type == 'string_value_mismatch':
+**Fix**: Correct string literals in WHERE clause
+- Check for incomplete values (e.g., 'Direct' → 'Directly funded')
+- Verify exact spelling of categorical values
+**Example**:
+- Before: `WHERE `Charter Funding Type` = 'Direct'`
+- After: `WHERE `Charter Funding Type` = 'Directly funded'`
+
+### If error_type == 'missing_aggregation':
+**Fix**: Add aggregation function and GROUP BY
+- Add SUM/COUNT/AVG/MAX/MIN based on question context
+- Add GROUP BY if aggregating by category
+**Example**:
+- Before: `SELECT City, Enrollment FROM schools`
+- After: `SELECT City, SUM(Enrollment) FROM schools GROUP BY City`
+
+### If error_type == 'wrong_aggregation':
+**Fix**: Replace or remove incorrect aggregation
+- Change aggregation function if wrong type
+- Remove aggregation if data is already aggregated
+- Add DISTINCT if counting unique values
+**Example**:
+- Before: `SELECT AVG(AvgScrRead) FROM satscores WHERE rtype = 'D'` (already averaged)
+- After: `SELECT AvgScrRead FROM satscores WHERE rtype = 'D' ORDER BY AvgScrRead DESC LIMIT 1`
+
+### If error_type == 'missing_subquery':
+**Fix**: Add subquery to compute reference value
+- Use subquery in WHERE clause for comparisons
+- Common patterns: "above average", "highest/lowest"
+**Example**:
+- Before: `SELECT School FROM schools WHERE Enrollment > 1000`
+- After: `SELECT School FROM schools WHERE Enrollment > (SELECT AVG(Enrollment) FROM schools)`
+
+### If error_type == 'wrong_query_architecture':
+**Fix**: Restructure query (JOIN ↔ subquery)
+- Convert JOIN to subquery if appropriate
+- Or vice versa - this requires significant changes
+**Caution**: This is complex - only modify if clearly wrong
+**Example**:
+- Before: `SELECT s.sname FROM satscores s JOIN frpm f ... ORDER BY s.NumTstTakr DESC LIMIT 1`
+- After: `SELECT sname FROM satscores WHERE cds = (SELECT CDSCode FROM frpm ORDER BY ... LIMIT 1)`
+
+### If error_type == 'output_columns_wrong':
+**Fix**: Adjust SELECT clause
+- Remove extra columns
+- Add missing columns
+- Rename columns if needed
+**Example**:
+- Before: `SELECT sname, AvgScrMath FROM satscores WHERE AvgScrMath > 560` (question asks "how many")
+- After: `SELECT COUNT(*) FROM satscores WHERE AvgScrMath > 560`
+
+### If error_type == 'missing_join':
+**Fix**: Add necessary JOIN clause
+- Identify which tables need to be joined
+- Add appropriate ON condition
+**Example**:
+- Before: `SELECT Phone FROM schools WHERE Charter = 1`
+- After: `SELECT s.Phone FROM schools s JOIN frpm f ON s.CDSCode = f.CDSCode WHERE f.`Charter School (Y/N)` = 1`
+
+### If error_type == 'wrong_filter_logic':
+**Fix**: Correct WHERE conditions
+- Remove unnecessary filters
+- Add missing filters
+- Fix comparison operators
+**Example**:
+- Before: `WHERE OpenDate > '2000-01-01' AND ClosedDate IS NULL AND Phone IS NOT NULL` (too restrictive)
+- After: `WHERE OpenDate > '2000-01-01'`
+
+## CRITICAL RULES:
+
+1. **Minimal Changes**: Only fix what's directly related to the error type
+2. **Preserve Correct Parts**: Keep everything that's working correctly
+3. **No Empty Output**: NEVER return empty SQL - if unsure, return original
+4. **Pure SQL Only**: Output SQL query only, NO explanations, NO markdown, NO code blocks
+5. **Targeted Fix**: Don't try to fix multiple error types at once
+
+## Correction Process:
+
+1. Understand the specific error type
+2. Locate the exact part of SQL causing this error
+3. Apply the minimal fix for THIS error type only
+4. Verify the fix doesn't break other parts
+5. Output the corrected SQL
+
+---
+
+Database Context:
+{db_context}
+
+User Question:
+{question}
+
+Original SQL:
+{sql}
+
+Error Type: {error_type}
+
+Revised SQL:

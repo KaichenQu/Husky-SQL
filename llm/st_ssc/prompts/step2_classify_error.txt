@@ -1,0 +1,163 @@
+You are an expert SQL error classifier. Your task is to analyze a generated SQL query against the user question and database schema, then identify the MOST SPECIFIC error type.
+
+IMPORTANT: Only use "no_error" when you are HIGHLY CONFIDENT the SQL is completely correct.
+
+## Error Type Definitions (10 categories):
+
+1. **no_error**
+   - The SQL query is completely correct and will produce the expected result
+   - Use ONLY when highly confident
+
+2. **missing_school_filter**
+   - Missing rtype filter (rtype = 'S' for school-level, rtype = 'D' for district-level)
+   - Common when querying satscores table without specifying data aggregation level
+
+3. **string_value_mismatch**
+   - String literals in WHERE clauses don't match actual database values
+   - Example: 'Direct' vs 'Directly funded', 'Elementary' vs 'Elementary School'
+
+4. **missing_aggregation**
+   - Query needs SUM/COUNT/AVG/MAX/MIN but doesn't have it
+   - Often missing GROUP BY when aggregating by category
+
+5. **wrong_aggregation**
+   - Using wrong aggregation function (COUNT instead of SUM)
+   - Aggregating data that's already aggregated
+   - Missing DISTINCT in COUNT when needed
+
+6. **missing_subquery**
+   - Needs nested query for comparisons (e.g., "above average", "highest value")
+   - Missing subquery to compute reference value first
+
+7. **wrong_query_architecture**
+   - Fundamental structure is wrong (should use subquery instead of JOIN, or vice versa)
+   - Complex restructuring needed
+
+8. **output_columns_wrong**
+   - SELECT clause returns wrong columns (too many, too few, or wrong ones)
+   - Column names don't match what the question asks for
+
+9. **missing_join**
+   - Multi-table query missing necessary JOIN
+   - Querying single table when multiple tables are needed
+
+10. **wrong_filter_logic**
+    - WHERE conditions are incorrect, missing, or excessive
+    - Wrong comparison operators or logic
+
+## Classification Process (check in order):
+
+Step 1: Is SQL empty or starts with "ERROR:"?
+→ Classify based on what's likely missing (aggregation, filter, etc.)
+
+Step 2: Check OUTPUT structure
+- Does SELECT return the correct columns the question asks for?
+- If NO → **output_columns_wrong**
+
+Step 3: Check ARCHITECTURE
+- Does question require subquery but query uses JOIN (or vice versa)?
+- If YES → **wrong_query_architecture**
+
+Step 4: Check AGGREGATION
+- Does question ask for "total", "average", "count" but SQL lacks aggregation?
+  → **missing_aggregation**
+- Does SQL aggregate data that's already aggregated?
+  → **wrong_aggregation**
+
+Step 5: Check SUBQUERY needs
+- Does question compare to "average" or "highest" without computing it first?
+  → **missing_subquery**
+
+Step 6: Check SCHOOL/DISTRICT filter
+- Is query on satscores missing rtype = 'S' or rtype = 'D'?
+  → **missing_school_filter**
+
+Step 7: Check JOIN
+- Does question mention multiple entities but query only uses one table?
+  → **missing_join**
+
+Step 8: Check WHERE conditions
+- Are filter conditions wrong, missing, or excessive?
+  → **wrong_filter_logic**
+
+Step 9: Check STRING values
+- Do string literals look suspicious or incomplete?
+  → **string_value_mismatch**
+
+Step 10: No issues found?
+→ **no_error** (only if highly confident)
+
+## Examples:
+
+**Example 1: missing_school_filter**
+Question: "Which school has the highest reading score?"
+SQL: SELECT sname FROM satscores WHERE AvgScrRead IS NOT NULL ORDER BY AvgScrRead DESC LIMIT 1
+Issue: Missing rtype = 'S' to filter to school-level data
+Classification: missing_school_filter
+
+**Example 2: string_value_mismatch**
+Question: "List schools with direct charter funding"
+SQL: SELECT School FROM schools WHERE `Charter Funding Type` = 'Direct'
+Issue: Value should be 'Directly funded' not 'Direct'
+Classification: string_value_mismatch
+
+**Example 3: missing_aggregation**
+Question: "What's the total enrollment in each city?"
+SQL: SELECT City, `Enrollment (K-12)` FROM frpm ORDER BY City
+Issue: Missing SUM() aggregation and GROUP BY City
+Classification: missing_aggregation
+
+**Example 4: wrong_aggregation**
+Question: "Find the district with highest average reading score"
+SQL: SELECT dname, AVG(AvgScrRead) FROM satscores WHERE rtype = 'D' GROUP BY dname ORDER BY AVG(AvgScrRead) DESC LIMIT 1
+Issue: AvgScrRead is already an average; shouldn't AVG() it again
+Classification: wrong_aggregation
+
+**Example 5: missing_subquery**
+Question: "List schools with enrollment above the state average"
+SQL: SELECT School FROM schools WHERE `Enrollment (K-12)` > 1000
+Issue: Needs subquery to calculate actual average, not hardcoded 1000
+Classification: missing_subquery
+
+**Example 6: wrong_query_architecture**
+Question: "School with most test takers"
+SQL: SELECT s.sname FROM satscores s JOIN frpm f ON s.cds = f.CDSCode WHERE s.NumTstTakr IS NOT NULL ORDER BY s.NumTstTakr DESC LIMIT 1
+Issue: JOIN is unnecessary; should just query satscores directly
+Classification: wrong_query_architecture
+
+**Example 7: output_columns_wrong**
+Question: "How many schools have math scores above 560?"
+SQL: SELECT sname, AvgScrMath FROM satscores WHERE AvgScrMath > 560
+Issue: Should return COUNT(*), not school names
+Classification: output_columns_wrong
+
+**Example 8: missing_join**
+Question: "List phone numbers of charter schools"
+SQL: SELECT Phone FROM schools WHERE Charter = 1
+Issue: Needs JOIN with frpm table to identify charter schools
+Classification: missing_join
+
+**Example 9: wrong_filter_logic**
+Question: "Schools opened after 2000"
+SQL: SELECT School FROM schools WHERE OpenDate > '2000-01-01' AND ClosedDate IS NULL AND StatusType = 'Active' AND Phone IS NOT NULL
+Issue: Too many unnecessary filters (ClosedDate, Phone checks not needed)
+Classification: wrong_filter_logic
+
+**Example 10: no_error**
+Question: "How many schools are in Alameda County?"
+SQL: SELECT COUNT(*) FROM schools WHERE County = 'Alameda'
+Issue: None - query is correct
+Classification: no_error
+
+Now classify the following SQL query:
+
+Database Context:
+{db_context}
+
+User Question:
+{question}
+
+SQL Query:
+{sql}
+
+Error Type:

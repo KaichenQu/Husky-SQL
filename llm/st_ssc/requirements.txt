@@ -1,0 +1,11 @@
+# ST-SSC Dependencies
+# Python 3.8+
+
+# Core dependencies
+requests>=2.28.0    # For AIML API calls
+pyyaml>=6.0         # For config.yaml parsing
+tqdm>=4.65.0        # For progress bars
+
+# Optional (if using Jupyter notebooks)
+# jupyter>=1.0.0
+# ipython>=8.0.0

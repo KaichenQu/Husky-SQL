@@ -1,0 +1,60 @@
+# ST-SSC Configuration File (Example)
+# Step-wise Single-type Self-Correction Framework for SQL Error Classification and Correction
+#
+# IMPORTANT: Copy this file to config.yaml and fill in your actual API key
+
+# Data paths
+data:
+  bird_dev_json: "../data/dev.json"
+  bird_dev_databases: "../data/dev_databases/"
+  bird_dev_gold_sql: "../data/dev_gold.sql"
+  bird_dev_tables_json: "../data/dev_tables.json"
+  converted_jsonl: "data/bird_dev_test.jsonl"
+
+# Model settings
+llm:
+  provider: "aiml"
+  model: "openai/gpt-5-1"
+  api_key: "YOUR_AIML_API_KEY_HERE"  # ⚠️ REQUIRED: Replace with your actual AIML API key
+  temperature: 1.0  # IMPORTANT: This model only supports temperature=1
+  max_tokens: 512
+  timeout: 60
+  reasoning_effort: "medium"  # Options: low, medium, high
+
+# Prompts
+prompts:
+  step1: "prompts/step1_generate_sql.txt"
+  step2: "prompts/step2_classify_error.txt"
+  step3: "prompts/step3_fix_one_type.txt"
+
+# Output paths
+outputs:
+  step1_direct: "outputs/step1_direct/predictions.jsonl"
+  step2_classified: "outputs/step2_classified/classified.jsonl"
+  step3_revised: "outputs/step3_revised/revised.jsonl"
+
+# Evaluation settings
+evaluation:
+  ex_script: "../src/evaluation.py"
+  ves_script: "../src/evaluation_ves.py"
+  num_cpus: 4
+  meta_timeout: 30.0
+  iterate_num: 100  # For VES evaluation
+
+# Experiment settings
+experiment:
+  dialect: "sqlite"
+  sample_limit: 0  # 0 = process all data, >0 = limit for testing (e.g., 5 for quick test)
+
+# Error type labels (fine-grained 10 categories)
+error_types:
+  - no_error
+  - missing_school_filter
+  - string_value_mismatch
+  - missing_aggregation
+  - wrong_aggregation
+  - missing_subquery
+  - wrong_query_architecture
+  - output_columns_wrong
+  - missing_join
+  - wrong_filter_logic
